@@ -15,7 +15,7 @@ boto3>=1.35.0
 # prebuilt cp312 wheels for macOS arm64 and Linux x86_64 — no compiler/CMake.
 # The exact resolution is pinned in requirements.lock.
 kiss-icp>=1.3.0
-numpy>=1.26.0
+numpy>=2.5.3
 
 # Dev / quality
 ruff>=0.8.0
