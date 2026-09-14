@@ -34,6 +34,9 @@ When this repo is used as the foundation for a new app, the following pieces are
 - **Dashboard.** `/` route and `apps/web/src/components/dashboard/` (stats cards, upload chart, recent uploads table) are illustrative defaults. Replace them with metrics, charts, and tables that reflect what the new app actually does (e.g. transcripts processed, embeddings indexed, classifications run). New aggregations must flow through the same `runtime -> service -> repo` layering and be exposed via TanStack Query hooks in `apps/web/src/lib/queries.ts` — no bare `useEffect + fetch`.
 - Update `docs/features/dashboard.md` in the same PR as any dashboard change (see §9).
 
+**This sample (KISS-ICP LiDAR Archive)**
+- The primary entity is a **`Session`** (a LiDAR SLAM run), added under `/sessions` with a full create/read/run/edit/delete lifecycle. Sessions are persisted DB-less as `sessions/<id>/index.json` in B2. The **KISS-ICP** engine is contained in `repo/lidar_engine.py` (lazy-imported), with the run orchestration in `service/session_run.py` and CRUD in `service/sessions.py`. The Dashboard is adapted to LiDAR metrics. The full-bucket File Explorer (`/files`) and Upload (`/upload`) remain per the contract above.
+
 **Why this contract exists**
 - The UI kit, Files, and Upload pages are the reusable B2-backed scaffolding that makes this a starter kit — stripping them defeats the purpose. The dashboard is the only screen explicitly designed to be rewritten per app.
 
@@ -43,8 +46,9 @@ When this repo is used as the foundation for a new app, the following pieces are
 
 - No backward imports across layers
 - No `boto3` outside `repo/`
+- No `kiss_icp` outside `repo/` (the SLAM engine is a third-party client — contained in `repo/lidar_engine.py`)
 - No business logic in route handlers (`runtime/`)
-- All external APIs wrapped in `repo/` adapters
+- All external APIs and SDKs wrapped in `repo/` adapters
 - All request/response data validated at boundary (Pydantic models)
 - No shared mutable state across layers
 
@@ -72,6 +76,7 @@ When this repo is used as the foundation for a new app, the following pieces are
 |------|-------------|
 | No backward imports | `tests/test_structure.py::test_no_backward_imports` |
 | No boto3 outside repo/ | `tests/test_structure.py::test_boto3_only_in_repo` |
+| No kiss_icp outside repo/ | `tests/test_structure.py::test_kiss_icp_only_in_repo` |
 | Backend app Python file size < 300 lines | `tests/test_structure.py::test_api_app_python_file_size_limit` |
 | All layers exist | `tests/test_structure.py::test_all_layers_exist` |
 | No bare print() | `ruff` rule T20 |

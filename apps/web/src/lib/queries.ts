@@ -8,19 +8,32 @@ import {
 } from "@tanstack/react-query";
 import {
   ApiError,
+  createSession,
   deleteFile,
+  deleteSession,
   getDownloadUrl,
   getFileDetail,
   getFiles,
   getFileStats,
   getHealth,
   getPreviewUrl,
+  getSession,
+  getSessions,
+  getSessionStats,
+  getTrajectory,
   getUploadActivity,
+  runSession,
+  updateSession,
 } from "@/lib/api-client";
 import type {
   FileMetadata,
   FileMetadataDetail,
-} from "@vibe-coding-starter-kit/shared";
+  Session,
+  SessionCreate,
+  SessionStats,
+  SessionUpdate,
+  TrajectoryGeoJSON,
+} from "@kiss-icp-lidar-archive/shared";
 
 // Single source of truth for query keys. Keep these tightly scoped so that
 // invalidating "files" doesn't blow away unrelated caches, and so an IDE
@@ -35,7 +48,16 @@ export const qk = {
   preview: (key: string) => [...qk.all, "preview", key] as const,
   detail: (key: string) => [...qk.all, "detail", key] as const,
   health: () => [...qk.all, "health"] as const,
+  sessions: () => [...qk.all, "sessions"] as const,
+  session: (id: string) => [...qk.all, "sessions", id] as const,
+  sessionStats: () => [...qk.all, "sessions", "stats"] as const,
+  trajectory: (id: string) => [...qk.all, "sessions", id, "trajectory"] as const,
 };
+
+// A session is "in motion" while ingesting scans or running SLAM — poll it.
+function isSessionBusy(status: Session["status"] | undefined): boolean {
+  return status === "ingesting" || status === "running";
+}
 
 export type Health = Awaited<ReturnType<typeof getHealth>>;
 
@@ -166,6 +188,92 @@ export function useDeleteFile() {
       // activity) against the server in the background.
       dropDeletedFileFromCache(qc, fileKey);
       qc.invalidateQueries({ queryKey: qk.all });
+    },
+  });
+}
+
+// --- LiDAR SLAM sessions ---------------------------------------------------
+
+export function useSessions() {
+  return useQuery<Session[], ApiError>({
+    queryKey: qk.sessions(),
+    queryFn: getSessions,
+    // Keep the list live while any session is ingesting/running.
+    refetchInterval: (query) =>
+      (query.state.data ?? []).some((s) => isSessionBusy(s.status)) ? 3000 : false,
+  });
+}
+
+export function useSession(sessionId: string | undefined, enabled = true) {
+  return useQuery<Session, ApiError>({
+    queryKey: qk.session(sessionId ?? ""),
+    queryFn: () => getSession(sessionId as string),
+    enabled: enabled && !!sessionId,
+    // Poll while the session is mid-ingest or mid-run so the UI advances on its
+    // own; stop once it settles (complete/failed/ingested).
+    refetchInterval: (query) =>
+      isSessionBusy(query.state.data?.status) ? 2000 : false,
+  });
+}
+
+export function useSessionStats() {
+  return useQuery<SessionStats, ApiError>({
+    queryKey: qk.sessionStats(),
+    queryFn: getSessionStats,
+  });
+}
+
+export function useTrajectory(sessionId: string | undefined, enabled: boolean) {
+  return useQuery<TrajectoryGeoJSON, ApiError>({
+    queryKey: qk.trajectory(sessionId ?? ""),
+    queryFn: () => getTrajectory(sessionId as string),
+    enabled: enabled && !!sessionId,
+    staleTime: 60_000,
+  });
+}
+
+export function useCreateSession() {
+  const qc = useQueryClient();
+  return useMutation<Session, ApiError, SessionCreate>({
+    mutationFn: (payload) => createSession(payload),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.sessions() });
+      qc.invalidateQueries({ queryKey: qk.sessionStats() });
+    },
+  });
+}
+
+export function useUpdateSession(sessionId: string) {
+  const qc = useQueryClient();
+  return useMutation<Session, ApiError, SessionUpdate>({
+    mutationFn: (payload) => updateSession(sessionId, payload),
+    onSuccess: (session) => {
+      qc.setQueryData(qk.session(sessionId), session);
+      qc.invalidateQueries({ queryKey: qk.sessions() });
+    },
+  });
+}
+
+export function useRunSession(sessionId: string) {
+  const qc = useQueryClient();
+  return useMutation<Session, ApiError, void>({
+    mutationFn: () => runSession(sessionId),
+    onSuccess: (session) => {
+      // Reflect the "running" status immediately; the detail poll takes over.
+      qc.setQueryData(qk.session(sessionId), session);
+      qc.invalidateQueries({ queryKey: qk.sessions() });
+    },
+  });
+}
+
+export function useDeleteSession() {
+  const qc = useQueryClient();
+  return useMutation<{ deleted: boolean }, ApiError, string>({
+    mutationFn: (sessionId) => deleteSession(sessionId),
+    onSuccess: (_data, sessionId) => {
+      qc.removeQueries({ queryKey: qk.session(sessionId) });
+      qc.invalidateQueries({ queryKey: qk.sessions() });
+      qc.invalidateQueries({ queryKey: qk.sessionStats() });
     },
   });
 }

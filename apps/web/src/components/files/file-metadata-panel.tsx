@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import type { FileMetadataDetail } from "@vibe-coding-starter-kit/shared";
+import type { FileMetadataDetail } from "@kiss-icp-lidar-archive/shared";
 
 interface FileMetadataPanelProps {
   metadata: FileMetadataDetail;
@@ -55,76 +55,6 @@ export function FileMetadataPanel({ metadata }: FileMetadataPanelProps) {
         </p>
         <MetaRow label="MD5" value={metadata.md5} />
         <MetaRow label="SHA-256" value={metadata.sha256} />
-
-        {/* A format extractor that was skipped or failed says so here. Without
-            this the Image / PDF section just vanished, which read as "this file
-            has no dimensions" rather than "we didn't decode it". */}
-        {metadata.metadata_warning && (
-          <p
-            className="rounded-md border border-[var(--attention)]/40 bg-[var(--attention)]/10 px-3 py-2 text-xs text-foreground"
-            role="note"
-          >
-            {metadata.metadata_warning}
-          </p>
-        )}
-
-        {/* Image metadata */}
-        {metadata.image_width && metadata.image_height && (
-          <>
-            <Separator />
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-              Image
-            </p>
-            <MetaRow
-              label="Dimensions"
-              value={`${metadata.image_width} x ${metadata.image_height}`}
-            />
-            {metadata.exif && (
-              <div className="space-y-1">
-                {Object.entries(metadata.exif)
-                  .slice(0, 8)
-                  .map(([key, val]) => (
-                    <MetaRow key={key} label={key} value={val} />
-                  ))}
-              </div>
-            )}
-          </>
-        )}
-
-        {/* PDF metadata */}
-        {metadata.pdf_pages !== null && (
-          <>
-            <Separator />
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-              PDF
-            </p>
-            <MetaRow label="Pages" value={metadata.pdf_pages} />
-            {metadata.pdf_author && (
-              <MetaRow label="Author" value={metadata.pdf_author} />
-            )}
-            {metadata.pdf_title && (
-              <MetaRow label="Title" value={metadata.pdf_title} />
-            )}
-          </>
-        )}
-
-        {/* Audio/Video metadata */}
-        {metadata.duration_seconds !== null && (
-          <>
-            <Separator />
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-              Media
-            </p>
-            <MetaRow
-              label="Duration"
-              value={`${metadata.duration_seconds.toFixed(1)}s`}
-            />
-            {metadata.codec && <MetaRow label="Codec" value={metadata.codec} />}
-            {metadata.bitrate && (
-              <MetaRow label="Bitrate" value={`${metadata.bitrate} bps`} />
-            )}
-          </>
-        )}
 
         <Separator />
         <MetaRow

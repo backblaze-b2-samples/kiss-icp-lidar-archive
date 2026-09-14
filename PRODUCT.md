@@ -6,20 +6,23 @@ product
 
 ## Users
 
-AI coding agents and "vibe coders" (developers who lean on AI to move fast) who clone
-this kit as the foundation for a new full-stack app. Their context: they want to skip
-the boilerplate loop (dashboard, upload, file browser, cloud storage wiring) and go
-straight to building their app's unique features. They read the repo, keep the shared
-scaffolding, and rebrand + rewrite the dashboard for their own use case.
+Robotics / autonomous-vehicle engineers and ML teams running continuous LiDAR SLAM
+who need a cheap, S3-compatible archive for the pipeline's output — raw scans,
+odometry, map snapshots, and trajectories — that they can query offline for analysis,
+dataset building, and model retraining. Also the AI coding agents and "vibe coders"
+who adapt this sample: it reuses Backblaze's B2 full-stack starter-kit scaffolding, so
+the shared scaffolding (UI kit, full-bucket File Explorer, Upload) is kept and the
+domain surface (Sessions + KISS-ICP) is the part they restyle for their own workload.
 
 ## Product Purpose
 
-An engineering-grade full-stack starter kit (Next.js 16 + React 19 + Tailwind v4 +
-shadcn/ui frontend, FastAPI backend) with Backblaze B2 cloud storage integrated out of
-the box. It ships a dashboard, drag-and-drop upload, and a file browser so builders
-start from a working app, not a blank page. Success = a builder can clone it, run it,
-rebrand it via one config file, and trust every screen enough to build on top without
-first fixing it.
+A full-stack sample (Next.js 16 + React 19 + Tailwind v4 + shadcn/ui frontend, FastAPI
+backend) that ingests LiDAR scan frames, runs the real open-source **KISS-ICP** SLAM
+engine on the backend (CPU-only), and streams every artifact into Backblaze B2 over the
+S3-compatible API. It shows B2 as the storage layer for a high-rate, data-heavy
+robotics pipeline. Success = a builder can clone it, run a synthetic session end-to-end
+with only `B2_*` credentials, see the recovered trajectory and the growing B2 archive,
+and trust every screen enough to point it at their own scans.
 
 ## Maturity and Support Boundary
 

@@ -20,21 +20,6 @@ export interface FileMetadataDetail {
   md5: string;
   sha256: string;
   uploaded_at: string;
-  /** Set when a format-specific extractor was skipped or failed (e.g. an image
-   *  above the decompression-bomb decode limit). Core fields stay exact. */
-  metadata_warning: string | null;
-  // Image-specific
-  image_width: number | null;
-  image_height: number | null;
-  exif: Record<string, string> | null;
-  // PDF-specific
-  pdf_pages: number | null;
-  pdf_author: string | null;
-  pdf_title: string | null;
-  // Audio/Video
-  duration_seconds: number | null;
-  codec: string | null;
-  bitrate: number | null;
 }
 
 export interface FileUploadResponse {
@@ -70,4 +55,85 @@ export interface UploadStats {
   total_size_human: string;
   uploads_today: number;
   total_downloads: number;
+}
+
+// --- LiDAR SLAM sessions (primary entity) ---------------------------------
+
+export type ScanSource = "synthetic" | "upload";
+export type Scene = "warehouse" | "corridor" | "open-loop";
+export type Quality = "fast" | "balanced" | "accurate";
+export type SessionStatus =
+  | "ingesting"
+  | "ingested"
+  | "running"
+  | "complete"
+  | "failed";
+
+export interface SessionMetrics {
+  frame_count: number;
+  scan_bytes: number;
+  map_snapshot_count: number;
+  map_point_count: number;
+  trajectory_distance_m: number;
+  /** Absolute trajectory error (RMSE, m) vs synthetic ground truth; null when
+   *  scans were uploaded (no ground truth) or the run hasn't happened yet. */
+  ate_rmse_m: number | null;
+  run_seconds: number | null;
+}
+
+export interface Session {
+  session_id: string;
+  session_name: string;
+  robot_id: string;
+  scan_source: ScanSource;
+  scene: Scene;
+  num_frames: number;
+  quality: Quality;
+  status: SessionStatus;
+  created_at: string;
+  updated_at: string;
+  scan_prefix: string;
+  scan_keys_count: number;
+  map_keys: string[];
+  odometry_keys: string[];
+  trajectory_txt_key: string | null;
+  trajectory_geojson_key: string | null;
+  metrics: SessionMetrics;
+  error: string | null;
+}
+
+export interface SessionCreate {
+  session_name: string;
+  robot_id: string;
+  scan_source: ScanSource;
+  scene: Scene;
+  num_frames: number;
+  quality: Quality;
+}
+
+export interface SessionUpdate {
+  session_name: string;
+  robot_id: string;
+}
+
+export interface SessionStats {
+  total_sessions: number;
+  total_frames: number;
+  total_scan_bytes: number;
+  total_scan_bytes_human: string;
+  maps_built: number;
+  total_trajectory_distance_m: number;
+}
+
+/** A GeoJSON LineString feature carrying the recovered / ground-truth path. */
+export interface TrajectoryFeature {
+  type: "Feature";
+  properties: { name: string; label: string };
+  geometry: { type: "LineString"; coordinates: [number, number][] };
+}
+
+export interface TrajectoryGeoJSON {
+  type: "FeatureCollection";
+  properties?: Record<string, unknown>;
+  features: TrajectoryFeature[];
 }

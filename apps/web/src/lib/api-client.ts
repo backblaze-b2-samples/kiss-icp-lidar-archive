@@ -4,8 +4,13 @@ import type {
   FileMetadataDetail,
   FileUploadResponse,
   PresignUploadResponse,
+  Session,
+  SessionCreate,
+  SessionStats,
+  SessionUpdate,
+  TrajectoryGeoJSON,
   UploadStats,
-} from "@vibe-coding-starter-kit/shared";
+} from "@kiss-icp-lidar-archive/shared";
 
 // Single-origin deploys (Vercel `services`: one project serving web + API) put
 // the API under /api on the same origin, so no NEXT_PUBLIC_API_URL is needed —
@@ -41,6 +46,16 @@ export const API_CLIENT_ROUTES = {
   // payload ceiling no longer caps upload size.
   uploadPresign: { method: "post", path: "/upload/presign" },
   uploadVerify: { method: "post", path: "/upload/verify" },
+  // LiDAR SLAM sessions (primary entity). /sessions/stats is declared before
+  // the {session_id} routes on the backend so "stats" is never read as an id.
+  sessions: { method: "get", path: "/sessions" },
+  sessionCreate: { method: "post", path: "/sessions" },
+  sessionStats: { method: "get", path: "/sessions/stats" },
+  session: { method: "get", path: "/sessions/{session_id}" },
+  sessionUpdate: { method: "post", path: "/sessions/{session_id}" },
+  sessionDelete: { method: "delete", path: "/sessions/{session_id}" },
+  sessionRun: { method: "post", path: "/sessions/{session_id}/run" },
+  sessionTrajectory: { method: "get", path: "/sessions/{session_id}/trajectory" },
 } as const satisfies Record<string, ApiClientRoute>;
 
 /** Typed API error with HTTP status code for caller-side branching. */
@@ -350,4 +365,71 @@ function putFileToStorage(
     }
     xhr.send(file);
   });
+}
+
+// --- LiDAR SLAM sessions ---------------------------------------------------
+
+const JSON_HEADERS = { "Content-Type": "application/json" } as const;
+
+function sessionPath(template: string, sessionId: string): string {
+  if (sessionId.length === 0) {
+    throw new ApiError("Session id is required", 400);
+  }
+  return template.replace("{session_id}", encodeURIComponent(sessionId));
+}
+
+export async function getSessions() {
+  return apiFetch<Session[]>(API_CLIENT_ROUTES.sessions.path);
+}
+
+export async function getSessionStats() {
+  return apiFetch<SessionStats>(API_CLIENT_ROUTES.sessionStats.path);
+}
+
+export async function getSession(sessionId: string) {
+  return apiFetch<Session>(
+    sessionPath(API_CLIENT_ROUTES.session.path, sessionId)
+  );
+}
+
+export async function createSession(payload: SessionCreate) {
+  return apiFetch<Session>(API_CLIENT_ROUTES.sessionCreate.path, {
+    method: API_CLIENT_ROUTES.sessionCreate.method.toUpperCase(),
+    headers: JSON_HEADERS,
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateSession(sessionId: string, payload: SessionUpdate) {
+  return apiFetch<Session>(
+    sessionPath(API_CLIENT_ROUTES.sessionUpdate.path, sessionId),
+    {
+      method: API_CLIENT_ROUTES.sessionUpdate.method.toUpperCase(),
+      headers: JSON_HEADERS,
+      body: JSON.stringify(payload),
+    }
+  );
+}
+
+export async function deleteSession(sessionId: string) {
+  return apiFetch<{
+    deleted: boolean;
+    session_id: string;
+    objects_deleted: number;
+  }>(sessionPath(API_CLIENT_ROUTES.sessionDelete.path, sessionId), {
+    method: API_CLIENT_ROUTES.sessionDelete.method.toUpperCase(),
+  });
+}
+
+export async function runSession(sessionId: string) {
+  return apiFetch<Session>(
+    sessionPath(API_CLIENT_ROUTES.sessionRun.path, sessionId),
+    { method: API_CLIENT_ROUTES.sessionRun.method.toUpperCase() }
+  );
+}
+
+export async function getTrajectory(sessionId: string) {
+  return apiFetch<TrajectoryGeoJSON>(
+    sessionPath(API_CLIENT_ROUTES.sessionTrajectory.path, sessionId)
+  );
 }

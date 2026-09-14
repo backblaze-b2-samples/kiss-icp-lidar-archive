@@ -82,6 +82,27 @@ def test_boto3_only_in_repo():
     assert violations == [], "boto3 boundary violations:\n" + "\n".join(violations)
 
 
+def test_kiss_icp_only_in_repo():
+    """The SLAM engine (kiss_icp) is a third-party client — confine it to repo/.
+
+    Mirrors the boto3 rule: the engine adapter lives in repo/lidar_engine.py so
+    the service/runtime layers never import kiss_icp directly.
+    """
+    violations = []
+    for layer in LAYER_ORDER:
+        if layer == "repo":
+            continue
+        layer_dir = APP_ROOT / layer
+        if not layer_dir.exists():
+            continue
+        for pyfile in _get_python_files(layer_dir):
+            for imp in _get_imports(pyfile):
+                if imp == "kiss_icp" or imp.startswith("kiss_icp."):
+                    rel = pyfile.relative_to(APP_ROOT.parent)
+                    violations.append(f"{rel}: kiss_icp imported outside repo/")
+    assert violations == [], "kiss_icp boundary violations:\n" + "\n".join(violations)
+
+
 def test_api_app_python_file_size_limit():
     """Verify authored Python under services/api/app stays within 300 lines."""
     violations = []

@@ -34,11 +34,13 @@ def test_openapi_metadata_uses_canonical_local_api_identity():
     schema = app.openapi()
 
     assert schema["info"] == {
-        "title": "Vibe Coding Starter Kit API",
+        "title": "KISS-ICP LiDAR Archive API",
         "description": (
-            "Local API for the Vibe Coding Starter Kit template, providing file "
-            "upload and management backed by Backblaze B2. This contract "
-            "documents the template's local API, not a hosted public endpoint."
+            "Local API for KISS-ICP LiDAR Archive, a Backblaze B2 sample that "
+            "ingests LiDAR scan frames, runs KISS-ICP SLAM on the backend, and "
+            "streams odometry, incremental point-cloud maps, and trajectories "
+            "to B2 over the S3-compatible API. This contract documents the "
+            "local API, not a hosted public endpoint."
         ),
         "version": "0.1.0",
     }

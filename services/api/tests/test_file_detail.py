@@ -1,12 +1,13 @@
-"""Tests for on-demand rich-metadata recomputation (`GET /files-by-key/detail`).
+"""Tests for on-demand object detail (`GET /files-by-key/detail`).
 
 The endpoint heads the object (existence + size guard), downloads its bytes,
 and re-runs the real `extract_metadata()`. Here `get_file_metadata` and
 `get_object_bytes` are stubbed at the service module; extraction runs for real.
+Detail is format-agnostic (size, checksums, extension) — the image/PDF
+extractors the starter shipped were trimmed for this LiDAR archive.
 """
 
 import hashlib
-import io
 from datetime import UTC, datetime
 
 import pytest
@@ -30,21 +31,13 @@ def _fake_metadata(
     return FileMetadata(
         key=key,
         filename=key.rsplit("/", 1)[-1],
-        folder="uploads/",
+        folder="scans/",
         size_bytes=size_bytes,
         size_human=f"{size_bytes} B",
         content_type=content_type,
         uploaded_at=UPLOADED_AT,
         url=None,
     )
-
-
-def _png_bytes(width: int, height: int) -> bytes:
-    from PIL import Image
-
-    buf = io.BytesIO()
-    Image.new("RGB", (width, height), color=(10, 20, 30)).save(buf, format="PNG")
-    return buf.getvalue()
 
 
 @pytest.mark.asyncio
@@ -55,7 +48,7 @@ async def test_detail_returns_checksums_for_text_file(client, monkeypatch):
     monkeypatch.setattr(files_service, "get_object_bytes", lambda key: TEXT_BYTES)
 
     resp = await client.get(
-        "/files-by-key/detail", params={"key": "uploads/note.txt"}
+        "/files-by-key/detail", params={"key": "scans/note.txt"}
     )
 
     assert resp.status_code == 200
@@ -63,35 +56,10 @@ async def test_detail_returns_checksums_for_text_file(client, monkeypatch):
     assert body["md5"] == hashlib.md5(TEXT_BYTES).hexdigest()
     assert body["sha256"] == hashlib.sha256(TEXT_BYTES).hexdigest()
     assert body["extension"] == "txt"
+    assert body["size_bytes"] == len(TEXT_BYTES)
     # The stored object's real upload time (head_object LastModified) is
     # threaded through the recompute — not the recompute wall-clock time.
     assert body["uploaded_at"].startswith("2026-01-02T03:04:05")
-    # Non-image / non-PDF: media/image/pdf fields stay null.
-    assert body["image_width"] is None
-    assert body["pdf_pages"] is None
-    assert body["duration_seconds"] is None
-
-
-@pytest.mark.asyncio
-async def test_detail_extracts_image_dimensions(client, monkeypatch):
-    png = _png_bytes(4, 7)
-    monkeypatch.setattr(
-        files_service,
-        "get_file_metadata",
-        lambda key: _fake_metadata(
-            key, content_type="image/png", size_bytes=len(png)
-        ),
-    )
-    monkeypatch.setattr(files_service, "get_object_bytes", lambda key: png)
-
-    resp = await client.get(
-        "/files-by-key/detail", params={"key": "uploads/pixel.png"}
-    )
-
-    assert resp.status_code == 200
-    body = resp.json()
-    assert body["image_width"] == 4
-    assert body["image_height"] == 7
 
 
 @pytest.mark.asyncio
@@ -99,7 +67,7 @@ async def test_detail_missing_file_returns_404(client, monkeypatch):
     monkeypatch.setattr(files_service, "get_file_metadata", lambda key: None)
 
     resp = await client.get(
-        "/files-by-key/detail", params={"key": "uploads/gone.txt"}
+        "/files-by-key/detail", params={"key": "scans/gone.txt"}
     )
 
     assert resp.status_code == 404
@@ -120,7 +88,7 @@ async def test_detail_oversized_file_rejected_without_download(client, monkeypat
     monkeypatch.setattr(files_service, "get_object_bytes", _boom)
 
     resp = await client.get(
-        "/files-by-key/detail", params={"key": "uploads/huge.bin"}
+        "/files-by-key/detail", params={"key": "scans/huge.bin"}
     )
 
     assert resp.status_code == 413
@@ -148,4 +116,4 @@ def test_get_object_bytes_wraps_streaming_read_failure(monkeypatch):
     monkeypatch.setattr(b2_object, "get_s3_client", lambda: _Client())
 
     with pytest.raises(RuntimeError):
-        b2_object.get_object_bytes("uploads/big.bin")
+        b2_object.get_object_bytes("scans/big.bin")

@@ -75,52 +75,8 @@
         "type": "object"
       },
       "FileMetadataDetail": {
+        "description": "Format-agnostic object detail recomputed on demand for the File Explorer.\n\nPoint-cloud archives don't need EXIF/PDF/media extraction, so the detail is\njust the exact size, checksums, and extension for any stored object.",
         "properties": {
-          "bitrate": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Bitrate"
-          },
-          "codec": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Codec"
-          },
-          "duration_seconds": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Duration Seconds"
-          },
-          "exif": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Exif"
-          },
           "extension": {
             "title": "Extension",
             "type": "string"
@@ -129,79 +85,13 @@
             "title": "Filename",
             "type": "string"
           },
-          "image_height": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Image Height"
-          },
-          "image_width": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Image Width"
-          },
           "md5": {
             "title": "Md5",
             "type": "string"
           },
-          "metadata_warning": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Metadata Warning"
-          },
           "mime_type": {
             "title": "Mime Type",
             "type": "string"
-          },
-          "pdf_author": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Pdf Author"
-          },
-          "pdf_pages": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Pdf Pages"
-          },
-          "pdf_title": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Pdf Title"
           },
           "sha256": {
             "title": "Sha256",
@@ -373,6 +263,318 @@
         "title": "PresignUploadResponse",
         "type": "object"
       },
+      "Session": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "map_keys": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Map Keys",
+            "type": "array"
+          },
+          "metrics": {
+            "$ref": "#/components/schemas/SessionMetrics"
+          },
+          "num_frames": {
+            "title": "Num Frames",
+            "type": "integer"
+          },
+          "odometry_keys": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Odometry Keys",
+            "type": "array"
+          },
+          "quality": {
+            "enum": [
+              "fast",
+              "balanced",
+              "accurate"
+            ],
+            "title": "Quality",
+            "type": "string"
+          },
+          "robot_id": {
+            "title": "Robot Id",
+            "type": "string"
+          },
+          "scan_keys_count": {
+            "default": 0,
+            "title": "Scan Keys Count",
+            "type": "integer"
+          },
+          "scan_prefix": {
+            "default": "",
+            "title": "Scan Prefix",
+            "type": "string"
+          },
+          "scan_source": {
+            "enum": [
+              "synthetic",
+              "upload"
+            ],
+            "title": "Scan Source",
+            "type": "string"
+          },
+          "scene": {
+            "enum": [
+              "warehouse",
+              "corridor",
+              "open-loop"
+            ],
+            "title": "Scene",
+            "type": "string"
+          },
+          "session_id": {
+            "title": "Session Id",
+            "type": "string"
+          },
+          "session_name": {
+            "title": "Session Name",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "ingesting",
+              "ingested",
+              "running",
+              "complete",
+              "failed"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "trajectory_geojson_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trajectory Geojson Key"
+          },
+          "trajectory_txt_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trajectory Txt Key"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "session_name",
+          "robot_id",
+          "scan_source",
+          "scene",
+          "num_frames",
+          "quality",
+          "status",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "Session",
+        "type": "object"
+      },
+      "SessionCreate": {
+        "properties": {
+          "num_frames": {
+            "default": 120,
+            "title": "Num Frames",
+            "type": "integer"
+          },
+          "quality": {
+            "default": "balanced",
+            "enum": [
+              "fast",
+              "balanced",
+              "accurate"
+            ],
+            "title": "Quality",
+            "type": "string"
+          },
+          "robot_id": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Robot Id",
+            "type": "string"
+          },
+          "scan_source": {
+            "default": "synthetic",
+            "enum": [
+              "synthetic",
+              "upload"
+            ],
+            "title": "Scan Source",
+            "type": "string"
+          },
+          "scene": {
+            "default": "warehouse",
+            "enum": [
+              "warehouse",
+              "corridor",
+              "open-loop"
+            ],
+            "title": "Scene",
+            "type": "string"
+          },
+          "session_name": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Session Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_name",
+          "robot_id"
+        ],
+        "title": "SessionCreate",
+        "type": "object"
+      },
+      "SessionMetrics": {
+        "description": "Metrics computed during ingest (scan_bytes/frame_count) and the KISS-ICP\nrun (everything else). All default to a zero/absent value pre-run.",
+        "properties": {
+          "ate_rmse_m": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ate Rmse M"
+          },
+          "frame_count": {
+            "default": 0,
+            "title": "Frame Count",
+            "type": "integer"
+          },
+          "map_point_count": {
+            "default": 0,
+            "title": "Map Point Count",
+            "type": "integer"
+          },
+          "map_snapshot_count": {
+            "default": 0,
+            "title": "Map Snapshot Count",
+            "type": "integer"
+          },
+          "run_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Seconds"
+          },
+          "scan_bytes": {
+            "default": 0,
+            "title": "Scan Bytes",
+            "type": "integer"
+          },
+          "trajectory_distance_m": {
+            "default": 0.0,
+            "title": "Trajectory Distance M",
+            "type": "number"
+          }
+        },
+        "title": "SessionMetrics",
+        "type": "object"
+      },
+      "SessionStats": {
+        "properties": {
+          "maps_built": {
+            "title": "Maps Built",
+            "type": "integer"
+          },
+          "total_frames": {
+            "title": "Total Frames",
+            "type": "integer"
+          },
+          "total_scan_bytes": {
+            "title": "Total Scan Bytes",
+            "type": "integer"
+          },
+          "total_scan_bytes_human": {
+            "title": "Total Scan Bytes Human",
+            "type": "string"
+          },
+          "total_sessions": {
+            "title": "Total Sessions",
+            "type": "integer"
+          },
+          "total_trajectory_distance_m": {
+            "title": "Total Trajectory Distance M",
+            "type": "number"
+          }
+        },
+        "required": [
+          "total_sessions",
+          "total_frames",
+          "total_scan_bytes",
+          "total_scan_bytes_human",
+          "maps_built",
+          "total_trajectory_distance_m"
+        ],
+        "title": "SessionStats",
+        "type": "object"
+      },
+      "SessionUpdate": {
+        "description": "Metadata-only edit. Ingest-time choices are immutable post-ingest.",
+        "properties": {
+          "robot_id": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Robot Id",
+            "type": "string"
+          },
+          "session_name": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Session Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_name",
+          "robot_id"
+        ],
+        "title": "SessionUpdate",
+        "type": "object"
+      },
       "UploadStats": {
         "properties": {
           "total_downloads": {
@@ -463,8 +665,8 @@
     }
   },
   "info": {
-    "description": "Local API for the Vibe Coding Starter Kit template, providing file upload and management backed by Backblaze B2. This contract documents the template's local API, not a hosted public endpoint.",
-    "title": "Vibe Coding Starter Kit API",
+    "description": "Local API for KISS-ICP LiDAR Archive, a Backblaze B2 sample that ingests LiDAR scan frames, runs KISS-ICP SLAM on the backend, and streams odometry, incremental point-cloud maps, and trajectories to B2 over the S3-compatible API. This contract documents the local API, not a hosted public endpoint.",
+    "title": "KISS-ICP LiDAR Archive API",
     "version": "0.1.0"
   },
   "openapi": "3.1.0",
@@ -996,6 +1198,306 @@
         "summary": "Metrics",
         "tags": [
           "metrics"
+        ]
+      }
+    },
+    "/sessions": {
+      "get": {
+        "operationId": "list_sessions_endpoint_sessions_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Session"
+                  },
+                  "title": "Response List Sessions Endpoint Sessions Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Sessions Endpoint",
+        "tags": [
+          "sessions"
+        ]
+      },
+      "post": {
+        "description": "Create a session (status `ingesting`) and ingest scans in the background.",
+        "operationId": "create_session_endpoint_sessions_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SessionCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Session Endpoint",
+        "tags": [
+          "sessions"
+        ]
+      }
+    },
+    "/sessions/stats": {
+      "get": {
+        "operationId": "session_stats_endpoint_sessions_stats_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionStats"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Session Stats Endpoint",
+        "tags": [
+          "sessions"
+        ]
+      }
+    },
+    "/sessions/{session_id}": {
+      "delete": {
+        "operationId": "delete_session_endpoint_sessions__session_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "session_id",
+            "required": true,
+            "schema": {
+              "title": "Session Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Session Endpoint",
+        "tags": [
+          "sessions"
+        ]
+      },
+      "get": {
+        "operationId": "get_session_endpoint_sessions__session_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "session_id",
+            "required": true,
+            "schema": {
+              "title": "Session Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Session Endpoint",
+        "tags": [
+          "sessions"
+        ]
+      },
+      "post": {
+        "operationId": "update_session_endpoint_sessions__session_id__post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "session_id",
+            "required": true,
+            "schema": {
+              "title": "Session Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SessionUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Session Endpoint",
+        "tags": [
+          "sessions"
+        ]
+      }
+    },
+    "/sessions/{session_id}/run": {
+      "post": {
+        "description": "Kick off the KISS-ICP run (headline). Returns immediately with status\n`running`; the UI polls the record until it reaches `complete`/`failed`.",
+        "operationId": "run_session_endpoint_sessions__session_id__run_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "session_id",
+            "required": true,
+            "schema": {
+              "title": "Session Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Run Session Endpoint",
+        "tags": [
+          "sessions"
+        ]
+      }
+    },
+    "/sessions/{session_id}/trajectory": {
+      "get": {
+        "description": "Recovered trajectory as GeoJSON (proxied from B2 for the 2D plot).",
+        "operationId": "get_trajectory_endpoint_sessions__session_id__trajectory_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "session_id",
+            "required": true,
+            "schema": {
+              "title": "Session Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Trajectory Endpoint",
+        "tags": [
+          "sessions"
         ]
       }
     },

@@ -3,6 +3,17 @@
 
 User journeys inside the application.
 
+## Manage LiDAR Sessions (primary)
+
+- User navigates to `/sessions` and clicks **New session**
+- The create form (react-hook-form + zod) collects: session name, robot ID (free text with placeholder hints), scan source (`synthetic` default / `upload`), and — for synthetic — scene (`warehouse`/`corridor`/`open-loop`), frames (`60`/`120`/`240`, default 120), and SLAM quality (`fast`/`balanced`/`accurate`)
+- On submit the API writes `sessions/<id>/index.json` (status `ingesting`) and a background task generates overlapping synthetic scans and streams each `frame_*.bin` to B2, then flips the status to `ingested`. The list and detail views poll and advance on their own
+- On the detail page the user clicks **Run SLAM** (the headline): the status goes `running`, KISS-ICP reads the scans back from B2 and computes poses + a voxel-hash map, and the odometry JSON, `.ply` map snapshots, and TUM/GeoJSON trajectory are archived to B2. Metrics (frames, scan bytes, map snapshots, map points, trajectory distance, drift/ATE, run seconds) land on the record and the status becomes `complete`
+- The detail page shows the metrics grid, a top-down **trajectory plot** (recovered path, plus the synthetic ground-truth overlay), and a **session archive** scoped to that session's prefixes with per-object download
+- **Edit** renames the session/robot (metadata only; ingest-time choices are immutable). **Delete** prompts for confirmation, then prefix-scoped `DeleteObjects` removes every object for that `session_id`
+- A failed ingest/run shows the error message on the record; the run can be retried
+- See: [LiDAR Sessions](features/lidar-sessions.md)
+
 ## Upload Files
 
 - User navigates to `/upload`
@@ -34,12 +45,10 @@ User journeys inside the application.
 ## View Dashboard
 
 - User navigates to `/` (home)
-- Three parallel API calls load: stats, recent files, upload activity — all served from one shared bucket listing that the API warms at startup
-- While stats load, the page states it in words above the cards rather than showing silent skeletons
-- Stats cards show: total files, storage used, uploads today, total downloads
-- Upload chart shows last 7 days of upload activity as bar chart
-- Recent uploads table shows last 10 files with filename, size, type, date. Each filename links to that file's preview on `/files` — `/files` teaches "click a file to preview it", so the same gesture here has to answer rather than being inert text
-- Empty state: "No files uploaded yet" messages
+- Stat cards show LiDAR metrics aggregated across sessions: total sessions, total scan frames archived, total scan bytes in B2, maps built, and total trajectory distance — sourced from `GET /sessions/stats`
+- A frames-per-session bar chart shows the archive growth across the most recent sessions
+- A recent-sessions table lists the latest sessions with status; each links to its detail page
+- Empty states invite creating a first session
 - See: [Dashboard](features/dashboard.md)
 
 ## Change Preferences

@@ -8,6 +8,13 @@ capped by Vercel's ~4.5 MB Function payload limit — the same flow handles up t
 `max_file_size` (100 MB default) on local, Railway, and Vercel alike, and is a
 direct showcase of B2 as the storage layer.
 
+In this LiDAR sample the Upload surface is reused as the **"upload real scans"**
+path: a session created with `scan_source = upload` expects real `.bin`/`.pcd`
+scans to be added instead of synthetic ones. The generic upload writes to the
+`uploads/` prefix; wiring uploads to a session's `scans/<robot_id>/<session_id>/`
+prefix is the secondary extension point (the synthetic generator is the
+fully-implemented default ingest path — see [Scan Ingest](scan-ingest.md)).
+
 ## Used By
 - UI: `/upload` page, upload form component
 - API: `POST /upload/presign`, `POST /upload/verify`
@@ -23,7 +30,7 @@ direct showcase of B2 as the storage layer.
 - `services/api/app/runtime/upload.py` — `POST /upload/presign` and `POST /upload/verify` handlers
 - `services/api/app/service/upload.py` — declared-upload validation, presign, and post-upload verification
 - `services/api/app/repo/b2_upload.py` — `generate_presigned_upload()` (signed PUT), `get_object_head_bytes()` (Range sniff), `invalidate_listing()`
-- `services/api/app/service/metadata.py` — `extract_metadata()`, now only via `/files-by-key/detail` (not at upload)
+- `services/api/app/service/metadata.py` — `extract_metadata()` (generic object detail: size, checksums, extension), computed on demand via `/files-by-key/detail` (not at upload)
 
 ## Canonical Files
 - Presign/verify handler pattern: `services/api/app/runtime/upload.py`
@@ -119,6 +126,6 @@ See [infra/vercel/README.md](../../infra/vercel/README.md) for the deploy-time d
 
 ## Related Docs
 - [ARCHITECTURE.md](../../ARCHITECTURE.md)
-- [Metadata Extraction](metadata-extraction.md)
+- [Scan Ingest](scan-ingest.md)
 - [App Workflows](../app-workflows.md)
 - [Design plan: presigned direct upload](../exec-plans/active/2026-08-06-presigned-direct-upload.md)
