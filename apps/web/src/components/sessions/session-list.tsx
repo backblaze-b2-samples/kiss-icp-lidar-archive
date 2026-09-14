@@ -42,50 +42,43 @@ export function SessionList() {
     router.push(`/sessions/${session.session_id}`);
   }
 
+  // A single trigger-only button: both mount sites (CardHeader and the
+  // empty-state action) share this Dialog's `open` state, so exactly one
+  // Dialog/DialogContent ever mounts — see the single <Dialog> wrapping the
+  // whole card below.
   const newSessionButton = (
-    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-      <DialogTrigger asChild>
-        <Button size="sm" className="h-8 shrink-0">
-          <Plus className="h-3.5 w-3.5" />
-          New session
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="max-h-[85svh] overflow-y-auto sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>New LiDAR session</DialogTitle>
-          <DialogDescription>
-            Generate synthetic scans (or plan to upload real ones), then run
-            KISS-ICP to build odometry, a map, and a trajectory in B2.
-          </DialogDescription>
-        </DialogHeader>
-        <SessionForm onCreated={handleCreated} />
-      </DialogContent>
-    </Dialog>
+    <DialogTrigger asChild>
+      <Button size="sm" className="h-8 shrink-0">
+        <Plus className="h-3.5 w-3.5" />
+        New session
+      </Button>
+    </DialogTrigger>
   );
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-4 space-y-0">
-        <CardTitle className="card-title">Sessions</CardTitle>
-        {newSessionButton}
-      </CardHeader>
-      <CardContent className="p-0">
-        {isLoading ? (
-          <div className="space-y-3 p-4">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} className="h-10 w-full" />
-            ))}
-          </div>
-        ) : error ? (
-          <ErrorState error={error} onRetry={() => refetch()} />
-        ) : sessions.length === 0 ? (
-          <EmptyState
-            icon={Radar}
-            title="No sessions yet"
-            description="Create a session to ingest LiDAR scans and run SLAM."
-            action={newSessionButton}
-          />
-        ) : (
+    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      <Card>
+        <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-4 space-y-0">
+          <CardTitle className="card-title">Sessions</CardTitle>
+          {newSessionButton}
+        </CardHeader>
+        <CardContent className="p-0">
+          {isLoading ? (
+            <div className="space-y-3 p-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Skeleton key={i} className="h-10 w-full" />
+              ))}
+            </div>
+          ) : error ? (
+            <ErrorState error={error} onRetry={() => refetch()} />
+          ) : sessions.length === 0 ? (
+            <EmptyState
+              icon={Radar}
+              title="No sessions yet"
+              description="Create a session to ingest LiDAR scans and run SLAM."
+              action={newSessionButton}
+            />
+          ) : (
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/40 hover:bg-muted/40">
@@ -144,8 +137,19 @@ export function SessionList() {
               ))}
             </TableBody>
           </Table>
-        )}
-      </CardContent>
-    </Card>
+          )}
+        </CardContent>
+      </Card>
+      <DialogContent className="max-h-[85svh] overflow-y-auto sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>New LiDAR session</DialogTitle>
+          <DialogDescription>
+            Generate synthetic scans (or plan to upload real ones), then run
+            KISS-ICP to build odometry, a map, and a trajectory in B2.
+          </DialogDescription>
+        </DialogHeader>
+        <SessionForm onCreated={handleCreated} />
+      </DialogContent>
+    </Dialog>
   );
 }

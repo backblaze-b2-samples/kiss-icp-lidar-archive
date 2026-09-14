@@ -75,3 +75,8 @@ Low-severity polish, left for a follow-up; none blocks the core flow.
 | Custom `FileNotFoundError` shadowed the built-in | Renamed to `FileNotFoundServiceError` |
 | Dropzone accepted any file type client-side | `accept` allow-list mirroring backend `ALLOWED_TYPES` (tested for drift) |
 | No test harness for feature specs | pytest suite across upload, files, activity, errors, validation, rate limit, pagination |
+
+## 2026-09-14 — verify
+- session detail (ingest/run) — progress bar `aria-valuenow` stays 0 while the visible "X / N" count and bar fill advance → a screen reader hears 0% throughout (.local/verify/A/06-run-read2.png)
+- session detail (post-create / post-Run) — ~8s of "0 / 60" before the first count tick; mitigated by the toast + "Ingesting…"/"Running…" badge + spinner, but no numeric movement in that first window (.local/verify/A/04c-ingest-read1.png)
+- session detail (run start) — Frames tile briefly dips before climbing because MetricsGrid renders `frame_count || scan_keys_count`, so it shows the ingested count until the first run tick lands (.local/verify/B/08-run-advancing.png)

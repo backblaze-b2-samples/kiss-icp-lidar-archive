@@ -21,6 +21,7 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/ui/error-state";
+import { Progress } from "@/components/ui/progress";
 import { SessionArchive } from "./session-archive";
 import { SessionEditDialog } from "./session-edit-dialog";
 import { SessionStatusBadge } from "./status-badge";
@@ -43,6 +44,30 @@ function Metric({ label, value }: { label: string; value: string }) {
         {label}
       </p>
       <p className="stat-value mt-1 text-xl">{value}</p>
+    </div>
+  );
+}
+
+function BusyProgress({ session }: { session: Session }) {
+  // Determinate feedback for the two B2-I/O-bound long ops (ingest ~80-110s,
+  // run ~40s): the backend now persists interim progress every few seconds
+  // (see session_run.py's _progress_step), so this bar advances on the same
+  // 2s poll instead of sitting behind just a spinner. Hidden once idle/complete.
+  if (session.status !== "ingesting" && session.status !== "running") return null;
+  const total = session.num_frames;
+  const current =
+    session.status === "ingesting"
+      ? session.scan_keys_count
+      : session.metrics.frame_count;
+  const pct = total > 0 ? Math.min(100, Math.max(0, (current / total) * 100)) : 0;
+  const label =
+    session.status === "ingesting"
+      ? `Ingesting scans — ${current} / ${total}`
+      : `Running KISS-ICP — ${current} / ${total}`;
+  return (
+    <div className="space-y-1.5">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <Progress value={pct} />
     </div>
   );
 }
@@ -180,6 +205,8 @@ export function SessionDetail({ sessionId }: { sessionId: string }) {
           <AlertDescription>{session.error}</AlertDescription>
         </Alert>
       )}
+
+      <BusyProgress session={session} />
 
       <MetricsGrid session={session} />
 

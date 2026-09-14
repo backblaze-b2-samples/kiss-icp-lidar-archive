@@ -26,6 +26,7 @@ logger = logging.getLogger(__name__)
 
 SNAPSHOT_EVERY = 30  # write an incremental map .ply every N frames
 ODOMETRY_BATCH = 30  # poses per odometry JSON batch
+PROGRESS_UPDATES = 12  # target interim persists spread across an op, first one early
 
 
 def _now() -> datetime:
@@ -34,6 +35,13 @@ def _now() -> datetime:
 
 def _seed(session_id: str) -> int:
     return uuid.UUID(session_id).int % (2**32)
+
+
+def _progress_step(total: int) -> int:
+    """Cadence for interim persists: ~PROGRESS_UPDATES spread across `total`,
+    so the first update lands within the first ~10% instead of waiting on a
+    fixed frame count (see module docstring note in the two call sites)."""
+    return max(1, total // PROGRESS_UPDATES)
 
 
 def _frame_to_bin(frame: np.ndarray) -> bytes:
@@ -86,12 +94,32 @@ def _ingest_synthetic(session: Session) -> None:
         session.scene, session.num_frames, seed=_seed(session.session_id)
     )
     total_bytes = 0
+    progress_step = _progress_step(session.num_frames)
     for i, frame in enumerate(frames, start=1):
         data = _frame_to_bin(frame)
         session_store.put_bytes(
             session_store.scan_frame_key(prefix, i), data, "application/octet-stream"
         )
         total_bytes += len(data)
+        # Throttled interim persist: ingest is B2-I/O-bound and can run well
+        # over 10s, so without this the UI's poll of GET /sessions/{id} sees
+        # no movement (Frames/Scan data stuck at 0) until the very end. The
+        # step is sized off num_frames so the first update lands within the
+        # first ~10% of frames (a few seconds in) rather than waiting on a
+        # fixed frame count, and ~PROGRESS_UPDATES land across the whole op
+        # regardless of preset size. Mirrors _on_progress in _do_run below.
+        # Status stays "ingesting" (unchanged) until the unconditional final
+        # persist below.
+        if i % progress_step == 0:
+            session.scan_keys_count = i
+            session.metrics = SessionMetrics(frame_count=0, scan_bytes=total_bytes)
+            session.updated_at = _now()
+            try:
+                session_store.put_session(session)
+            except Exception:
+                logger.exception(
+                    "Could not persist ingest progress for %s", session.session_id
+                )
     session.scan_keys_count = len(frames)
     session.metrics = SessionMetrics(frame_count=0, scan_bytes=total_bytes)
     session.status = "ingested"
@@ -120,7 +148,7 @@ def request_run(session_id: str) -> Session:
 def run_session(session_id: str) -> None:
     """Background task: run KISS-ICP over the session's scans and archive output."""
     session = session_store.get_session(session_id)
-    if session is None or session.status == "running":
+    if session is None or session.status != "running":
         return
     try:
         _do_run(session)
@@ -139,8 +167,32 @@ def _do_run(session: Session) -> None:
 
     started = time.monotonic()
     frames = (_read_frame(k) for k in scan_keys)
+    progress_step = _progress_step(len(scan_keys))
+
+    def _on_progress(frame_count: int) -> None:
+        # Throttled: a run over hundreds of frames can take well over 10s, and
+        # without this the UI's poll of GET /sessions/{id} sees no movement
+        # until the very end. Step sized off the actual frame total so the
+        # first update lands early and ~PROGRESS_UPDATES land across the run
+        # (see _progress_step / the mirrored comment in _ingest_synthetic).
+        if frame_count % progress_step:
+            return
+        session.metrics = SessionMetrics(
+            frame_count=frame_count, scan_bytes=session.metrics.scan_bytes
+        )
+        session.updated_at = _now()
+        try:
+            session_store.put_session(session)
+        except Exception:
+            logger.exception(
+                "Could not persist run progress for %s", session.session_id
+            )
+
     result = lidar_engine.run_odometry(
-        frames, quality=session.quality, snapshot_every=SNAPSHOT_EVERY
+        frames,
+        quality=session.quality,
+        snapshot_every=SNAPSHOT_EVERY,
+        on_progress=_on_progress,
     )
 
     sid = session.session_id

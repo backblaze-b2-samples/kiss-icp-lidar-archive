@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Boxes, Download, FileJson, Loader2, Route, ScanLine } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { toast } from "sonner";
@@ -11,7 +12,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getDownloadUrl } from "@/lib/api-client";
 import { startBrowserDownload } from "@/lib/browser-download";
-import { useFiles } from "@/lib/queries";
+import { qk, useFiles } from "@/lib/queries";
 import type { Session } from "@kiss-icp-lidar-archive/shared";
 
 function basename(key: string): string {
@@ -84,8 +85,24 @@ function ArtifactGroup({
 
 export function SessionArchive({ session }: { session: Session }) {
   const [pending, setPending] = useState<string | null>(null);
+  const queryClient = useQueryClient();
   // Real scoped ListObjectsV2 against this session's scan prefix.
   const { data: scans = [], isLoading } = useFiles(session.scan_prefix, 1000);
+
+  // This listing has no live-update path of its own: ingest and the SLAM run
+  // write new objects from the backend, not through this query, so nothing
+  // ever marks it stale on its own. Re-fetch whenever the polled session's
+  // status changes (e.g. ingesting -> ingested, running -> complete) so newly
+  // archived scans show up without a manual page refresh.
+  const previousStatus = useRef(session.status);
+  useEffect(() => {
+    if (previousStatus.current !== session.status) {
+      previousStatus.current = session.status;
+      queryClient.invalidateQueries({
+        queryKey: qk.files(session.scan_prefix, 1000),
+      });
+    }
+  }, [session.status, session.scan_prefix, queryClient]);
 
   async function download(key: string) {
     setPending(key);

@@ -8,6 +8,11 @@ import type { NextConfig } from "next";
 // without per-deployment tweaks.
 const nextConfig: NextConfig = {
   transpilePackages: ["@kiss-icp-lidar-archive/shared"],
+  // Dev-only: the Playwright harness (see playwright.config.ts) drives the app
+  // at 127.0.0.1 while `next dev` defaults to trusting only `localhost`, so
+  // every JS chunk request was blocked as cross-origin and the app never
+  // hydrated when driven via 127.0.0.1.
+  allowedDevOrigins: ["localhost", "127.0.0.1"],
   images: {
     remotePatterns: [
       {

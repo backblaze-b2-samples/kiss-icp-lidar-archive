@@ -99,7 +99,9 @@ async def test_run_rejects_while_ingesting(client, monkeypatch):
 
 
 def test_run_marks_failed_when_engine_unavailable(monkeypatch):
-    session = _fake_session(status="ingested")
+    # By the time the background task runs, request_run() has already
+    # persisted status="running" synchronously (see runtime/sessions.py).
+    session = _fake_session(status="running")
     saved = []
     monkeypatch.setattr(session_store, "get_session", lambda sid: session)
     monkeypatch.setattr(
@@ -122,7 +124,9 @@ def test_run_marks_failed_when_engine_unavailable(monkeypatch):
 
 
 def test_run_completes_and_archives_artifacts(monkeypatch):
-    session = _fake_session(status="ingested", num_frames=4)
+    # Same precondition as above: request_run() already flipped this to
+    # "running" before the background task starts.
+    session = _fake_session(status="running", num_frames=4)
     saved = {}
     puts: list[str] = []
     monkeypatch.setattr(session_store, "get_session", lambda sid: session)
