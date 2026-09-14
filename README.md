@@ -22,6 +22,24 @@ needs no second API key. The only credentials are your `B2_*` values.
 - FastAPI backend with a strict layered architecture and structural tests
 - Agent-optimized docs — your AI coding agent can read the repo and start contributing immediately
 
+## What it looks like
+
+**Dashboard** — SLAM archive metrics (sessions, scan frames, scan data in B2, maps, trajectory distance), a scan-frames-per-session chart, and recent sessions.
+
+![Dashboard with LiDAR SLAM metrics, scan-frames chart, and recent sessions](docs/images/dashboard.png)
+
+**Sessions** — every LiDAR SLAM run with its robot, scene, frame count, trajectory distance, and status.
+
+![Sessions list of LiDAR SLAM runs](docs/images/sessions.png)
+
+**Session detail** — per-run metrics, the KISS-ICP recovered path against synthetic ground truth, and the B2-archived scans, map snapshots, odometry, and trajectory.
+
+![Session detail with trajectory plot and B2 session archive](docs/images/session-detail.png)
+
+**Upload** — drag-and-drop files straight into the B2 bucket over the S3-compatible API.
+
+![Upload page with drag-and-drop file area](docs/images/upload.png)
+
 ## Quick Start
 
 You need: Node.js >= 20, pnpm >= 9, Python >= 3.12, and a free **[Backblaze B2 account](https://www.backblaze.com/sign-up/ai-cloud-storage?utm_source=github&utm_medium=referral&utm_campaign=ai_artifacts&utm_content=b2ai-kiss-icp-lidar-archive)**.
